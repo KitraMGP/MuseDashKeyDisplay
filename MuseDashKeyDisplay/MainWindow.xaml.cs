@@ -23,10 +23,16 @@ namespace MuseDashKeyDisplay
     {
         public static bool isReady = false;
         public static MainWindow instance;
-        private static int keyDownCount = 0;    // 按键计数
-        private static long counterStartTime = 0;   // 计数开始时间
+
+        // 存储前 5 次的按键计数
+        // 类似于一个队列，但长度固定，新计数为数组第一个元素，其他元素向后移动，最后一个元素被丢弃
+        private static int[] hitCountHistory = new int[5];
+        private static int hitCount = 0;    // 按键计数
+        // private static long counterStartTime = 0;   // 计数开始时间
         private static bool counterLocked = false;  // 实现了一个简单的锁，防止多个线程同时修改计数器状态
         private static StaticData staticData = StaticData.Get();    // 存储 UI 数据绑定的数据
+
+        // 以下字段用于 UI 缩放功能
         private static int originWidth = 506;
         private static double originHeight = 173;
         private static double zoomFactor = 1d;
@@ -35,6 +41,11 @@ namespace MuseDashKeyDisplay
         {
             InitializeComponent();
             instance = this;
+
+            // 用 -1 标记所有尚未使用的元素
+            for (int i = 0; i < hitCountHistory.Length; i++)
+                hitCountHistory[i] = -1;
+
             Stats.SetBinding(TextBlock.TextProperty, new Binding()
             {
                 Source = staticData,
@@ -42,7 +53,7 @@ namespace MuseDashKeyDisplay
             });
             isReady = true;
             KeyboardHook.SetHook();
-            Timer updateTimer = new(300);   // 300ms 运行一次，计算按键速度
+            /*Timer updateTimer = new(300);   // 300ms 运行一次，计算按键速度
             updateTimer.Elapsed += (o, e) =>
             {
                 if (!counterLocked)
@@ -59,7 +70,13 @@ namespace MuseDashKeyDisplay
             };
             ResetCounter();
             updateTimer.Start();
-            counterResetTimer.Start();
+            counterResetTimer.Start();*/
+            Timer updateTimer = new(300);
+            updateTimer.Elapsed += (o, e) =>
+            {
+                CalculateHitSpeed();
+            };
+            // updateTimer.Start();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -69,20 +86,43 @@ namespace MuseDashKeyDisplay
             instance = null;
         }
 
-        private void UpdateKeyCounter()
+        private void CalculateHitSpeed()
         {
-            if (counterStartTime == 0) return;
+            /*if (counterStartTime == 0) return;
             double secondsPast = (double)(DateTime.Now.Ticks - counterStartTime) / 10000 / 1000;
             if (secondsPast <= 0.02d) return;
-            double keySpeed = (double)keyDownCount / secondsPast;
-            staticData.Msg = String.Format("击键速度：{0:F2} /s", keySpeed);
+            double keySpeed = (double)keyHitCount / secondsPast;
+            staticData.Msg = String.Format("击键速度：{0:F2} /s", keySpeed);*/
+            // 除第一个元素外所有元素向右移动
+            // 随后将 hitCount 赋给第一个元素
+            for (int i = hitCountHistory.Length - 1; i > 0 ; i--)
+            {
+                hitCountHistory[i] = hitCountHistory[i - 1];
+            }
+            hitCountHistory[0] = hitCount;
+            hitCount = 0;
+
+            // 取最近 3 次测量的数据计算击键速度
+            int hitSum = 0;
+            int validCount = 0;
+            for (int i = 0; i < 3; i++)
+            {
+                if (hitCountHistory[i] != -1)
+                {
+                    hitSum += hitCountHistory[i];
+                    validCount++;
+                }
+            }
+            // int hitSpeed = (int) Math.Round((double) hitSum / 3d, 1);
+            int hitSpeed = (int)(hitSum / (double) validCount / 0.9d);
+            staticData.Msg = String.Format("击键速度：{0} /s", hitSpeed);
         }
 
         private void ResetCounter()
         {
-            keyDownCount = 0;
+            /*keyHitCount = 0;
             counterStartTime = DateTime.Now.Ticks;
-            UpdateKeyCounter();
+            UpdateKeyCounter();*/
         }
 
         private void SwitchKeyState(Rectangle rect, TextBlock text, bool keyDown)
@@ -186,7 +226,7 @@ namespace MuseDashKeyDisplay
                 ProcessOtherKeyEvents(keyName, true);
                 // MessageBox.Show(keyName);
             }
-            keyDownCount++;
+            hitCount++;
         }
 
         public void OnKeyRelease(Key key)

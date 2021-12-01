@@ -58,13 +58,16 @@ namespace MuseDashKeyDisplay
 
                 int keyData = KeyDataFromHook.vkCode;
 
-                //WM_KEYDOWN和WM_SYSKEYDOWN消息
+                // WM_KEYDOWN和WM_SYSKEYDOWN消息
                 if (wParam == Win32Api.WM_KEYDOWN || wParam == Win32Api.WM_SYSKEYDOWN)
                 {
                     // 此处触发键盘按下事件
                     // keyData为按下键盘的值,对应 虚拟码
-                    Key key = KeyInterop.KeyFromVirtualKey(keyData);
-                    MainWindow.instance.OnKeyDown(key);
+                    // if ((lParam.ToInt32() & 0xffff) != 0)  // 检查是否为长按按键的自动重复
+                    //{
+                        Key key = KeyInterop.KeyFromVirtualKey(keyData);
+                        MainWindow.instance.OnKeyDown(key);
+                    //}
                 }
 
                 //WM_KEYUP和WM_SYSKEYUP消息
