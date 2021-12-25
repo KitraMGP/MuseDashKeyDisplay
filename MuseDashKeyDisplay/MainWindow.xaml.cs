@@ -34,7 +34,7 @@ namespace MuseDashKeyDisplay
 
         // 以下字段用于 UI 缩放功能
         private static int originWidth = 506;
-        private static double originHeight = 173;
+        private static double originHeight = 113;
         private static double zoomFactor = 1d;
 
         public MainWindow()
@@ -46,11 +46,12 @@ namespace MuseDashKeyDisplay
             for (int i = 0; i < hitCountHistory.Length; i++)
                 hitCountHistory[i] = -1;
 
+            /*
             Stats.SetBinding(TextBlock.TextProperty, new Binding()
             {
                 Source = staticData,
                 Path = new PropertyPath("Msg")
-            });
+            });*/
             isReady = true;
             KeyboardHook.SetHook();
             /*Timer updateTimer = new(300);   // 300ms 运行一次，计算按键速度
@@ -160,8 +161,8 @@ namespace MuseDashKeyDisplay
 
         private void ProcessOtherKeyEvents(string keyName, bool keyDown)
         {
-            SwitchKeyState(OtherKeyLastB, OtherKeyLastT, keyDown);
-            OtherKeyLastT.Text = ProcessKeyNames(keyName);
+            /*SwitchKeyState(OtherKeyLastB, OtherKeyLastT, keyDown);
+            OtherKeyLastT.Text = ProcessKeyNames(keyName);*/
         }
 
         private string ProcessKeyNames(string keyName)
@@ -209,14 +210,23 @@ namespace MuseDashKeyDisplay
         public void OnKeyDown(Key key)
         {
             string keyName = key.ToString();
-            if (keyName == "Add")
+
+            if (keyName == "Add" || keyName == "OemPlus")
             {
                 ZoomIn();
             }
-            else if (keyName == "Subtract")
+            else if (keyName == "Subtract" || keyName == "OemMinus")
             {
                 ZoomOut();
             }
+            /*else if (keyName == "PageUp")
+            {
+                Show();
+            }
+            else if (keyName == "PageDown")
+            {
+                Hide();
+            }*/
             else if (keyName.Length == 1 && "SDFJKL".Contains(keyName))
             {
                 ProcessMajorKeyEvents(keyName, true);
@@ -226,6 +236,8 @@ namespace MuseDashKeyDisplay
                 ProcessOtherKeyEvents(keyName, true);
                 // MessageBox.Show(keyName);
             }
+
+            //if (keyName == "")
             hitCount++;
         }
 
